@@ -1,0 +1,169 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wazuh-alerts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1ff1178d-1dbc-4a76-9e84-a8564421d7e5",
+      "name": "Webhook",
+      "webhookId": "b5284957-e659-4177-b49f-13203becfd58"
+    },
+    {
+      "parameters": {
+        "fromEmail": "add542001@smtp-brevo.com",
+        "toEmail": "-------@gmail.com",
+        "subject": "=[🚨 SOC ALERT] Critical Malware Attack - Mimikatz Detected!",
+        "html": "=<h3>⚠️ CRITICAL SECURITY ALERT: MIMIKATZ DETECTED</h3>\n<hr>\n<p>Halo Tim Analis SOC,</p>\n<p>Telah terdeteksi aktivitas eksekusi perkakas peretasan (hacktool) berbahaya di dalam jaringan laboratorium lokal. Berikut adalah rincian investigasi otomatis dari sistem SOAR:</p>\n\n<ul>\n  <li><b>Sumber Deteksi:</b> Wazuh SIEM Integration</li>\n  <li><b>Nama Rule:</b> Mimikatz Usage Detected</li>\n  <li><b>Status Reputasi VirusTotal:</b> 🚨 <b>MALICIOUS</b> (Terdeteksi positif oleh {{ $json.data.attributes.last_analysis_stats.malicious }} mesin antivirus)</li>\n  <li><b>Kategori Ancaman:</b> {{ $json.data.attributes.popular_threat_classification.suggested_threat_label }}</li>\n</ul>\n\n<p><b>Rekomendasi Tindakan:</b><br>\nSegera lakukan isolasi jaringan (containment) pada host target melalui konsol Wazuh dan periksa dasbor Alerts SIEM/TheHive untuk penanganan insiden lebih lanjut.</p>\n<hr>\n<p><i>Pesan ini dikirimkan secara otomatis oleh mesin otomatisasi n8n SOAR Lab.</i></p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        544,
+        -176
+      ],
+      "id": "f6106719-67ae-4966-ad55-2781e0e1141e",
+      "name": "Send an Email",
+      "webhookId": "f9f38728-a4fc-4c8e-8fcf-6685c609c903",
+      "credentials": {
+        "smtp": {
+          "id": "9MO74lKtu4ggZPB2",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://www.virustotal.com/api/v3/files/{{ $json.file_hash }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        0
+      ],
+      "id": "3c2a1d19-4b20-4f24-826b-da81d789fcf6",
+      "name": "VirusTotal",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8w7j5KwiPxFZgiwl",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Mengambil data string 'text' murni dari Webhook n8n\nconst rawText = items[0].json.body.text;\n\n// 2. Mengubah string tersebut menjadi objek JSON asli\nconst wazuhLog = JSON.parse(rawText);\n\n// 3. MEMPERBAIKI BIDIKAN: Langsung membidik field 'hashes' murni milik Sysmon\nconst fullLog = wazuhLog.win.eventdata.hashes;\n\n// 4. Rumus Regex untuk mencari string SHA256 (64 karakter hexadecimal)\nconst sha256Regex = /[a-fA-F0-9]{64}/;\nconst match = fullLog.match(sha256Regex);\n\n// 5. Jika hash ditemukan, keluarkan hasilnya\nif (match) {\n  return [{ json: { file_hash: match[0] } }];\n} else {\n  return [{ json: { error: \"Hash SHA256 tidak ditemukan dalam log\" } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        0
+      ],
+      "id": "d0bc073d-7bbe-47de-8e8e-dbad9329d181",
+      "name": "Wazuh"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.56.12:9000/api/v1/alert",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"Wazuh SIEM - Mimikatz Attack Detected\",\n  \"description\": \"Critical Alert from Wazuh Manager. Malware binary executed on target machine. Analysis results from VirusTotal: Hacktool Mimikatz confirmed with 65 malicious flags.\",\n  \"type\": \"Malware\",\n  \"source\": \"Wazuh-SIEM\",\n  \"sourceRef\": \"WZ-{{ $('Webhook').item.json.body.id }}\",\n  \"severity\": 3,\n  \"tlp\": 2,\n  \"pap\": 2\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        544,
+        0
+      ],
+      "id": "1319152a-0003-4db9-8e24-1f530e5c8165",
+      "name": "TheHive",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "faw05NLu1tM1ateF",
+          "name": "Header Auth account 2"
+        },
+        "httpBasicAuth": {
+          "id": "BwiCwegIAPIKeLT8",
+          "name": "Unnamed credential"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Wazuh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "VirusTotal": {
+      "main": [
+        [
+          {
+            "node": "TheHive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wazuh": {
+      "main": [
+        [
+          {
+            "node": "VirusTotal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TheHive": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fd445637-bf7d-4430-b653-ebf550f63d6d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b8f518afff315710c1c1f645717a6594cba5f6f14352464ed16ef4dcaf518c8"
+  },
+  "nodeGroups": [],
+  "id": "6DGKLdhjv22McL62",
+  "tags": []
+}
