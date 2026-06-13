@@ -44,7 +44,7 @@ The security automation pipeline executes sequentially and in parallel through t
 6. Alert Notification (SMTP Relay Brevo to Gmail): As the final defensive response action, n8n compiles all dynamic variables (Wazuh alerts + VirusTotal intelligence) into a custom HTML notification template. This message is fired via SMTP Relay Brevo (Port 587) to safely bypass security restrictions and land instantly in the analyst's Gmail inbox.
 
 
-#**🛠️ Configuration & Deployment Guide**#
+## **🛠️ Configuration & Deployment Guide**
 1. Networking Prerequisites (VirtualBox)
 
 Ensure that your Virtual Machines (VMs) are configured with dual Network Adapters to maintain connectivity:
@@ -76,7 +76,7 @@ Append the following custom integration block inside the /var/ossec/etc/ossec.co
 - TheHive Node: Set up Header Auth with Name: Authorization and Value: Bearer <YOUR_THEHIVE_API_KEY>, or utilize Basic Auth (Username & Password of an Authorized User).
 - Send an Email Node (SMTP): Insert Host (smtp-relay.brevo.com), Port (587), User (Your Brevo Account Email), and Password (The master SMTP key generated from Brevo). Ensure the From Email parameter matches your verified Brevo sender email address.
 
-#**🚀 Testing & Final Results**#
+## **🚀 Testing & Final Results**
 
 When an attack simulation is triggered by executing the Mimikatz binary on the target Windows 11 endpoint, the SOAR framework responds autonomously within milliseconds:
 
